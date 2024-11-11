@@ -19,7 +19,9 @@ class FastMailer extends EventEmitter {
         banned: boolean,
         banExpiry: number,
         consecutiveFailures: number,
-        lastFailure: number
+        lastFailure: number,
+        rapidAttempts: number, // Track rapid sending attempts
+        lastAttempt: number // Track timestamp of last attempt
     }>;
 
     constructor(config: MailerConfig) {
@@ -47,6 +49,8 @@ class FastMailer extends EventEmitter {
                 banDuration: 7200000, // 2 hours
                 maxConsecutiveFailures: 3, // Max failures before temp ban
                 failureCooldown: 300000, // 5 min failure cooldown
+                maxRapidAttempts: 10, // Max attempts within rapid period
+                rapidPeriod: 10000, // 10 second rapid period
                 ...config.rateLimiting
             },
             // Logging configuration
@@ -166,10 +170,47 @@ class FastMailer extends EventEmitter {
                 banned: false,
                 banExpiry: 0,
                 consecutiveFailures: 0,
-                lastFailure: 0
+                lastFailure: 0,
+                rapidAttempts: 0,
+                lastAttempt: now
             };
             this.rateLimits.set(recipient, recipientLimits);
         }
+
+        // Check rapid sending attempts
+        const rapidPeriod = this.config.rateLimiting?.rapidPeriod || 10000; // 10 seconds
+        if (now - recipientLimits.lastAttempt < rapidPeriod) {
+            recipientLimits.rapidAttempts++;
+            if (recipientLimits.rapidAttempts >= (this.config.rateLimiting?.maxRapidAttempts || 10)) {
+                recipientLimits.banned = true;
+                recipientLimits.banExpiry = now + (this.config.rateLimiting?.banDuration || 7200000);
+                this.metrics.banned_recipients_count++;
+                this.writeLog('debug', {
+                    recipient,
+                    event: 'banned',
+                    reason: 'rapid_attempts',
+                    attempts: recipientLimits.rapidAttempts,
+                    period: rapidPeriod,
+                    message: 'Too many rapid sending attempts'
+                });
+                throw {
+                    code: 'ERATELIMIT',
+                    message: 'Too many rapid sending attempts',
+                    details: {
+                        type: 'rate_limit_error',
+                        context: {
+                            recipient,
+                            attempts: recipientLimits.rapidAttempts,
+                            period: rapidPeriod
+                        },
+                        timestamp: new Date().toISOString()
+                    }
+                };
+            }
+        } else {
+            recipientLimits.rapidAttempts = 1;
+        }
+        recipientLimits.lastAttempt = now;
 
         // Check if currently banned
         if (recipientLimits.banned) {
@@ -202,6 +243,7 @@ class FastMailer extends EventEmitter {
                 recipientLimits.count = 0;
                 recipientLimits.lastReset = now;
                 recipientLimits.consecutiveFailures = 0;
+                recipientLimits.rapidAttempts = 0;
                 this.metrics.banned_recipients_count--;
             }
         }

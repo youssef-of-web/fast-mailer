@@ -24,6 +24,8 @@ export interface MailerConfig {
         banDuration?: number;
         maxConsecutiveFailures?: number;
         failureCooldown?: number;
+        maxRapidAttempts?: number;
+        rapidPeriod?: number;
     };
     logging?: {
         level?: 'debug' | 'info' | 'warn' | 'error';

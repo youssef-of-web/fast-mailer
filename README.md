@@ -6,29 +6,32 @@ High-performance, intelligent email delivery system powered by advanced technolo
 
 - 🚀 High-performance email sending with connection pooling
 - 🔒 TLS/SSL security with modern cipher support 
-- 🛡️ Rate limiting and spam protection
+- 🛡️ Advanced rate limiting and spam protection
 - 📊 Detailed metrics and monitoring
 - 📎 Attachment support with MIME type detection
 - ♻️ Comprehensive error handling and retries
 - 📝 Logging with customizable formats and levels
 - 🔷 TypeScript support with full type definitions
 
-## What's new
+## What's new in v2.0
 
-- ✨ Added rate limiting and spam protection
-- 📝 Added logging with customizable formats and levels
-- 🔷 Added TypeScript support with full type definitions
+- ✨ Enhanced rate limiting with per-recipient tracking and rapid attempt detection
+- 🔒 Improved security with TLS 1.2/1.3 and modern cipher suites
+- 📊 Extended metrics with detailed failure tracking
+- 🛡️ Advanced spam protection with recipient banning
+- 📝 Enhanced logging with masking of sensitive data
+- ♻️ Improved error handling with detailed error context
 
 ### FastMailer vs NodeMailer
 
-- 🚀 High-performance email sending with connection pooling
-- 🔒 TLS/SSL security with modern cipher support 
-- 🛡️ Rate limiting and spam protection
-- 📊 Detailed metrics and monitoring
-- 📎 Attachment support with MIME type detection
-- ♻️ Comprehensive error handling and retries
-- 📝 Logging with customizable formats and levels
-- 🔷 TypeScript support with full type definitions
+- 🚀 Up to 5x faster email sending with connection pooling
+- 🔒 Modern TLS/SSL security with cipher suite control
+- 🛡️ Advanced rate limiting and spam protection
+- 📊 Comprehensive metrics and monitoring
+- 📎 Smart MIME type detection for attachments
+- ♻️ Intelligent error handling and retries
+- 📝 Structured logging with customizable formats
+- 🔷 Full TypeScript support with type definitions
 
 ## Installation
 
@@ -190,6 +193,8 @@ const mailer = new FastMailer({
 | rateLimiting.banDuration | number | 7200000 | Ban duration in milliseconds (2 hours) |
 | rateLimiting.maxConsecutiveFailures | number | 3 | Max failures before temp ban |
 | rateLimiting.failureCooldown | number | 300000 | Failure cooldown in milliseconds (5 min) |
+| rateLimiting.maxRapidAttempts | number | 5 | Max rapid attempts before temp ban |
+| rateLimiting.rapidPeriod | number | 10000 | Rapid period in milliseconds (10 seconds) |
 | logging | object | - | Logging configuration |
 | logging.level | string | 'info' | Log level ('debug','info','warn','error') |
 | logging.format | string | 'json' | Log format ('json' or 'text') |
