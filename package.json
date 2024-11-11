@@ -1,6 +1,6 @@
 {
   "name": "fast-mailer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "High-performance, intelligent email delivery system powered by advanced technology",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
