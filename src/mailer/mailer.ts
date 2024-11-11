@@ -24,6 +24,9 @@ class FastMailer extends EventEmitter {
 
     constructor(config: MailerConfig) {
         super();
+        // Determine if port requires secure connection
+        const securePort = config.port === 465;
+        
         this.config = {
             ...config,
             // Number of retry attempts for failed email sends
@@ -34,6 +37,8 @@ class FastMailer extends EventEmitter {
             keepAlive: config.keepAlive || false,
             // Maximum number of simultaneous connections
             poolSize: config.poolSize || 5,
+            // Force secure true if using secure port
+            secure: securePort ? true : config.secure,
             // Rate limiting configuration with more secure defaults
             rateLimiting: {
                 perRecipient: true,
@@ -55,6 +60,11 @@ class FastMailer extends EventEmitter {
 
         if (!this.config.from) {
             throw new Error('From address is required in config');
+        }
+
+        // Log warning if secure port but secure not set
+        if (securePort && !config.secure) {
+            console.warn('Port 465 requires secure connection. Forcing secure: true');
         }
 
         // Setup logging
