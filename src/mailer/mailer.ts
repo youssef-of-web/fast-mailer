@@ -597,7 +597,7 @@ class FastMailer extends EventEmitter {
 
     private writeLog(level: string, data: any): void {
         // First check if we should log this message
-        if (!this.logFilePath || !this.shouldLog(level)) {
+        if (!this.shouldLog(level)) {
             return;
         }
 
@@ -628,8 +628,25 @@ class FastMailer extends EventEmitter {
                 formattedLog = JSON.stringify(logEntry) + '\n';
             }
 
-            // Write to file
-            fs.appendFileSync(this.logFilePath, formattedLog);
+            // Write to file if destination exists, otherwise write to console
+            if (this.logFilePath) {
+                fs.appendFileSync(this.logFilePath, formattedLog);
+            } else {
+                // Use appropriate console method based on level
+                switch (level) {
+                    case 'error':
+                        console.error(formattedLog);
+                        break;
+                    case 'warn':
+                        console.warn(formattedLog);
+                        break;
+                    case 'debug':
+                        console.debug(formattedLog);
+                        break;
+                    default:
+                        console.log(formattedLog);
+                }
+            }
         } catch (error) {
             console.warn('Failed to write log:', error);
         }

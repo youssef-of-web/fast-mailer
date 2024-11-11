@@ -1,6 +1,6 @@
 {
   "name": "fast-mailer",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "High-performance, intelligent email delivery system powered by advanced technology",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -25,7 +25,11 @@
     "test:coverage": "jest --coverage",
     "prepublishOnly": "npm run test && npm run build"
   },
-  "author": "Your Name",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youssef-of-web/fast-mailer"
+  },
+  "author": "Youssef Mansouri",
   "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.0",
