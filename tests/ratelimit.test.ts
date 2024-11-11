@@ -32,7 +32,9 @@ describe('Rate Limiting Tests', () => {
                 cooldownPeriod: 1000, // 1 second cooldown
                 banDuration: 7200000, // 2 hour ban
                 maxConsecutiveFailures: 3,
-                failureCooldown: 300000 // 5 min failure cooldown
+                failureCooldown: 300000, // 5 min failure cooldown
+                maxRapidAttempts: 5,
+                rapidPeriod: 10000 // 10 second period
             },
             logging: {
                 level: 'debug',
@@ -58,7 +60,9 @@ describe('Rate Limiting Tests', () => {
             banned: false,
             banExpiry: Date.now() + 7200000,
             consecutiveFailures: 0,
-            lastFailure: Date.now()
+            lastFailure: Date.now(),
+            rapidAttempts: 0,
+            lastAttempt: Date.now()
         };
         mailer['rateLimits'].set(recipient, mockLimits);
 
@@ -92,7 +96,9 @@ describe('Rate Limiting Tests', () => {
             banned: false,
             banExpiry: Date.now() + 7200000,
             consecutiveFailures: 0,
-            lastFailure: Date.now()
+            lastFailure: Date.now(),
+            rapidAttempts: 0,
+            lastAttempt: Date.now()
         };
         mailer['rateLimits'].set(recipient, mockLimits);
 
@@ -116,7 +122,9 @@ describe('Rate Limiting Tests', () => {
             banned: true,
             banExpiry,
             consecutiveFailures: 3,
-            lastFailure: Date.now()
+            lastFailure: Date.now(),
+            rapidAttempts: 0,
+            lastAttempt: Date.now()
         };
         mailer['rateLimits'].set(recipient, mockLimits);
 
@@ -156,7 +164,9 @@ describe('Rate Limiting Tests', () => {
             banned: false,
             banExpiry: Date.now() + 7200000,
             consecutiveFailures: 0,
-            lastFailure: Date.now()
+            lastFailure: Date.now(),
+            rapidAttempts: 0,
+            lastAttempt: Date.now()
         };
         mailer['rateLimits'].set(recipient, mockLimits);
 
@@ -169,5 +179,52 @@ describe('Rate Limiting Tests', () => {
         const metrics = mailer.getMetrics();
         expect(metrics.rate_limit_exceeded_total).toBeGreaterThan(0);
         expect(metrics.current_rate_limit_window).toBeDefined();
+        expect(metrics.current_rate_limit_window.count).toBeDefined();
+        expect(metrics.current_rate_limit_window.remaining).toBeDefined();
+        expect(metrics.current_rate_limit_window.reset_time).toBeDefined();
+        expect(metrics.errors_by_type.rate_limit).toBeGreaterThan(0);
+    });
+
+    it('should enforce rapid attempt limits', async () => {
+        const recipient = process.env.TO || '';
+        const mailOptions = {
+            to: recipient,
+            subject: 'Test Email',
+            text: 'Test content'
+        };
+
+        // Mock state with max rapid attempts
+        const mockLimits = {
+            count: 0,
+            lastReset: Date.now(),
+            banned: false,
+            banExpiry: Date.now() + 7200000,
+            consecutiveFailures: 0,
+            lastFailure: Date.now(),
+            rapidAttempts: 5, // At max rapid attempts
+            lastAttempt: Date.now()
+        };
+        mailer['rateLimits'].set(recipient, mockLimits);
+
+        // Should fail due to rapid attempts
+        await expect(mailer.sendMail(mailOptions)).rejects.toMatchObject({
+            code: 'ERATELIMIT',
+            message: 'Too many rapid sending attempts',
+            details: {
+                type: 'rate_limit_error',
+                context: {
+                    recipient
+                }
+            }
+        });
+
+        // Mock state with rapid attempts but outside rapid period
+        mockLimits.lastAttempt = Date.now() - 11000; // Just outside rapid period
+        mockLimits.banned = false; // Ensure not banned
+        mockLimits.rapidAttempts = 0; // Reset rapid attempts
+        mailer['rateLimits'].set(recipient, mockLimits);
+
+        // Should succeed since outside rapid period
+        await expect(mailer.sendMail(mailOptions)).resolves.toMatchObject({ success: true });
     });
 });
